@@ -1,0 +1,352 @@
+* ggplot2
+** What are the basic components of a graph?
+   - coord: How (x,y) is put on 2D plan.
+   - geom: How scaled data is mapped to coordinates
+   - scale: How data is mapped to aesthetic scale: color, size, shape
+   - stats: How data is summarised
+   - data, aesthetics mapping: What is to be plotted and what aesthetic item to use for each.
+
+** qplot
+   Quick way of plotting
+
+*** How to set the values manually without any scaling?
+    By using the I() operator.
+    qplot(...) needs the I() operator because it takes the mapping and plot
+    parameters together. Hence, it needs a way of distinguishing between these
+    two:
+
+    1. ggplot(d, aes(x, y)) + geom_point(aes(color = z))
+    2. ggplot(d, aes(x, y)) + geom_point(color = z)
+
+*** Difference between qplot(..., color="red") and qplot(..., color=I("red"))?
+    qplot(..., color="darkblue") _maps_ the color to a category variable which
+                                    contains only one value.
+    qplot(..., color=I("darkblue")) _sets_ the color to a 'darkblue'.
+
+
+*** How to change the opacity of the plotted geom?
+    Set alpha parameter (0 = transparent, 1 = opaque)
+    qplit(x, y, alpha=I(1/2))
+
+*** How to color according to a categorical variable?
+    qplot(x, y, colour=z, data=d)
+
+*** How to change the type of point by a categorical variable?
+    qplot(x, y, shape=z, data=d)
+
+*** How to change the size of a point by a continuous variable?
+    qplot(x, y, size=z, data=d)
+
+*** How to plot data as a line and add a smoother?
+    qplot(x, y, data=d, geom=c('line', 'smooth'))
+
+*** How to disable standard error interval on the smoother?
+    se=F in the qplot call
+
+*** What smoothing method is used?
+    For n < 1000 -> loess (O(n^2) in memory)
+    otherwise -> method="gam" from mgcv (like using lm with splines?)
+    gam == Generalized additive model
+
+*** How to use linear regression for smoothing?
+    qplot(x, y, geom='smooth', method='lm')
+
+*** How to use polynomial regression for smoothing?
+    qplot(x, y, geom='smooth', method='lm', formula=y ~ poly(x, 2))
+
+*** How to use splines for regression?
+    library(splines)
+    deg.freedom <- 2
+    qplot(x, y, geom='smooth', method='lm', fomula=y ~ ns(x, deg.freedom))
+
+*** How to use robust linear regression(s) for smoothing?
+    library(MASS)
+    qplot(x, y, geom='smooth', method='lm', fomula=y ~ ns(x, deg.freedom))
+
+*** How to color by a categorical variable z?
+    qplot(x, y, colors=z)
+
+*** Which geoms group continuous values by categories?
+    'boxplot' and 'jitter'
+
+*** Which geoms work for 1D data and what parameters do they take?
+    'density', 'histogram', 'freqpoly'
+    histogram => breaks, binwidth
+    density => adjust (smoothing)
+
+*** How to draw a barchart?
+    qplot(x, geom="bar") // Y value is the count
+    qplot(x, geom="bar", weight=y, data=d) // Value 'y' is summed
+
+*** TODO: How to draw a barchart with mean 'weight'?
+    I don't know how.
+    qqplot(x, geom="bar", weight=mean(y), data=d) does something weird.
+
+*** How to facet data across a categorical variable?
+    Pass a formula to facet of the form row_var ~ col_var.
+    qplot(x, facet=y ~ .) // Draws different histograms for each 'y'
+
+*** How to facet a density plot instead of a histogram?
+    Use ..density.. (?)
+    Works only with geom='histogram'
+    qplot(x, ..density.., facet=y ~ ., geom='histogram')
+
+** Difference between geom='path' and geom='line'
+   A line grows only left to right, a path can go in arbitrary direction.
+
+** Graph elements
+*** data
+
+**** In what forms can we give data to ggplot?
+     Only as a data.frame
+
+**** How to give data directly to ggplot?
+     It is the first argument passed to ggplot function
+
+**** How can we replace data in a ggplot object?
+     By using the %+% operator. The new data.frame must have the same columns.
+     Using the + operator is not allowed by R.
+
+*** aesthetic mapping
+
+**** What are some common aesthetic mappings?
+     1. x, y: continuous or categorical
+     2. color: continuous or categorical
+     3. group: categorical
+
+     custom geoms can understand other aesthetic mappings.
+
+**** How is setting a color mapping different from setting a color?
+     When the color is set, it is uniform for the complete graph and it is done
+     as a parameter to the geom_* functions.
+
+     When it is mapped, it can vary for the different elements. It is done by
+     passing color as a parameter to the aes function.
+
+**** What is the role of the group aesthetic?
+     It helps the geoms which display multiple rows of data.
+
+**** What is the default setting for the group aesthetic?
+     If one of the x,y variables is discrete, it is used as group.
+     If both of them are continuous, then group is taken to be 1 for all.
+
+**** How are aesthetics mapped to graphical objects?
+     Individual geom: Each element gets the aesthetics marked for it.
+     line/path: the i to i+1 segment has aesthetics of i^th object
+     Collective geom: Default values are used if aesthetics of a group conflict
+
+*** geoms
+    What actually draws the graphical objects
+    Each geom has a default stat, and each stat a default geom.
+
+**** abline
+     Draws a line specified by slope and intercept
+     Default stat: abline
+     Params: colour, linetype, size
+
+**** area
+     Area plots
+     Default stat: identity
+     Params: colour, fill, linetype, size
+     Req. params: x, y
+
+**** bar
+     Bars/rectangles with base on y axis
+     Default stat: bin
+     Params: colour, fill, linetype, size, weight
+     Req. params: x
+
+**** blank
+     Draws nothing
+     Default stat: abline
+
+**** boxplot
+     Draws box-and-whisker plot
+     Default stat: boxplot
+     Params: colour, fill, size, wright
+     Req: lower, middle, upper, x, ymin, ymax
+
+**** contour
+     Contours of 3D surface on 2D
+     Default stat: contour
+     Params: colour, linetype, size, weight
+     Req: x, y
+
+**** crossbar
+     Hollow bar with middle indicated by horiz. line
+     Default stat: identity
+     Params: colour, fill, linetype, size
+     Req: x, y, ymax, ymin
+
+**** density
+     Smooth density estimate
+     Default stat: density
+     Params: color, fill, linetype, size, weight
+     Req: x, y
+
+**** density_2d
+     Contours from a 2d density estimate
+     Default stat: density2d
+     Params: color, linetype, size, weight
+     Req: x, y
+
+**** errorbar
+     Error bars
+     Stat: identity
+     Params: colour, linetype, size, width
+     Req: x, ymax, ymin
+
+**** histogram
+     Histogram
+     Stat: bin
+     params: colour, fill, linetype, size, weight
+     req: x
+
+**** hline
+     Horizontal line
+     Stat: hline
+     params: colour, linetype, size
+
+**** interval
+     Base for all interval (range) geoms
+
+**** jitter
+     Points, jittered to reduce overplotting
+     stat: identity
+     params: colour, fill, shape, size
+     reqq: x, y
+
+**** line
+     Connect observations, in order of x value
+     stat: identity
+     param: colour, linetype, size
+     req: x, y
+
+**** linerange
+     An interval represented by a vertical line
+     stat: identity
+     params: colour, linetype, size
+     req: x, ymax, ymin
+
+**** path
+     Connect observations in original order
+     Stat: identity
+     params: colour, linetype, size
+     req: x, y
+
+**** point
+     points, scatterplot
+     stat: identity
+     params: colour, fill, shape, size
+     req: x, y
+
+**** pointrange
+     An interval represented by a vertical line, with a point in the middle
+     stat: identity
+     params: colour, fill, linetype, shape, size
+     req: x, y, ymax, ymin
+
+**** polygon
+     Filled polygon
+     stat: identity
+     params: colour, fill, linetype, size
+     req: x, y
+
+**** quantile
+     Add quantile lines from a quantile regression (!)
+     stat: quantile
+     params: colour, linetype, size, weight
+     req: x, y
+
+**** ribbon
+     Ribbons, y range with continuous x values
+     stat: identity
+     params: colour, fill, linetype, size
+     req: x, ymax, ymin
+
+**** rug
+     Marginal rug plots (?)
+     stat: identity
+     params: colour, linetype, size
+
+
+**** segments
+     Single line segments
+     stat: identity
+     params: colour, linetype, size
+     req: x, xend, y, yend
+
+
+**** smooth
+     Add a smoothed condition mean
+     stat: smooth
+     params: alpha, colour, fill, linetype, size, weight
+     req: x, y
+
+**** step
+     Connect observations by stairs
+     stat: identity
+     params: alphs, colour, fill, linetype, size, weight
+     req: x, y
+
+**** text
+     Textual annotations
+     stat: identity
+     params: angle, colour, hjust, size, vjust
+     req: label, x, y
+
+**** tile
+     Tile plot as densely as possible, assuming equal tile size
+     stat: identity
+     params: colour, fill, linetype, size
+     req: x, y
+
+**** vline
+     Vertical line
+     stat: vline
+     params: colour, linetype, size
+
+*** stats
+
+**** What are the constraints on stats?
+     It should be location and scale invariant:
+
+     f(x + a) = f(x) + a
+     f(b * a) = b * f(x)
+
+     These ensure that the stat does not change on changing the scales.
+
+**** What are the input/output provided to a stat?
+     Data frame is given as input and it returns a dataset as output.
+     It can add variables to the original dataset.
+
+**** How to use a stat's output instead of the default value for a geom?
+     To use a variable produced by a stat, it needs to be surrounded by two dots
+     This prevents confusing it with another variable in the dataset.
+
+**** What does stat_bin do and what is it used for?
+     It is used for creating histograms and produces the following variables:
+
+     1. count: number of observations in each bin
+     2. dnsity: % of total / barWidth
+     3. x: center of the bin
+
+*** positioning
+    After adding a layer, positioning decides how to place the graphical
+    elements together inside a single layer.
+
+**** How to add positioning to a plot?
+     By passing in the 'position' parameter set to a valid value to any ggplot
+     function.
+
+**** What are the kind of adjustments and their purpose?
+     - dodge: Adjust position by dodging overlaps to the side
+     - fill: stack overlapping objects and standardise to have equal height
+     - identity: Don't adjust positions
+     - jitter: Jitter points to avoid overlap
+     - stack: Stack overlapping objects on top of another
+** TODO: Faceting v/s varied aesthetics
+   Compare them.
+
+** TODO: Faceting v/s positioning (dodging)
+   Compare them.
